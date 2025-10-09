@@ -6,6 +6,8 @@
 #include "GameFramework/Character.h"
 #include "Soul_Character.generated.h"
 
+class USoul_PlayerOverlay;
+class USoul_AttributeComponent;
 struct FInputActionValue;
 class UInputAction;
 class UInputMappingContext;
@@ -29,6 +31,26 @@ protected:
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 
+	/** 질주 */
+	void Sprinting();
+	void StopSprint();
+	bool IsMoving() const;
+	
+	/** 질주 속도 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = MovementData)
+	float SprintingSpeed = 750.f;
+
+	/** 일반 속도 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = MovementData)
+	float NormalSpeed = 500.0f;
+
+	// UI
+	UPROPERTY(EditDefaultsOnly, Category = UI)
+	TSubclassOf<USoul_PlayerOverlay> PlayerOverlayClass;
+
+	UPROPERTY()
+	TObjectPtr<USoul_PlayerOverlay> PlayerOverlay;
+	
 private:
 	UPROPERTY(EditDefaultsOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> FollowCamera;
@@ -45,4 +67,11 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Input|Action", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> LookAction;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Input|Action", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> SprintAction;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USoul_AttributeComponent> AttributeComponent;
+	
+	
 };

@@ -14,8 +14,11 @@ void USoul_AnimInstance::NativeInitializeAnimation()
 {
 	Super::NativeInitializeAnimation();
 
-	Character = CastChecked<ACharacter>(GetOwningActor());
-	MovementComponent = Character->GetCharacterMovement();
+	Character = Cast<ACharacter>(GetOwningActor());
+	if (Character)
+	{
+		MovementComponent = Character->GetCharacterMovement();
+	}
 }
 
 void USoul_AnimInstance::NativeUpdateAnimation(float DeltaSeconds)
