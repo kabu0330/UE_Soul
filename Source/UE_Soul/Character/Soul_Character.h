@@ -38,7 +38,7 @@ protected:
 	
 	/** 질주 속도 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = MovementData)
-	float SprintingSpeed = 750.f;
+	float SprintingSpeed = 1000.f;
 
 	/** 일반 속도 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = MovementData)
