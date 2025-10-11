@@ -15,20 +15,12 @@ USoul_StateComponent::USoul_StateComponent()
 void USoul_StateComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	
 }
 
 void USoul_StateComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 										 FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-}
-
-bool USoul_StateComponent::IsCurrentStateEqualToAny(const FGameplayTagContainer& TagsToCheck) const
-{
-	return TagsToCheck.HasTagExact(CurrentState);
 }
 
 void USoul_StateComponent::ToggleMovementInput(bool bEnabled, float Duration)
@@ -42,7 +34,7 @@ void USoul_StateComponent::ToggleMovementInput(bool bEnabled, float Duration)
 		 */
 		FLatentActionInfo LatentAction;
 		LatentAction.CallbackTarget = this; // 콜백 함수를 호출할 객체
-		LatentAction.ExecutionFunction = "MovementInputEnabled"; // 리플렉션으로 처리하므로 반드시 UFUNCTION 필수
+		LatentAction.ExecutionFunction = "MovementInputEnableAction"; // 리플렉션으로 처리하므로 반드시 UFUNCTION 필수
 		LatentAction.Linkage = 0; // 여러 개의 LatentAction을 사용할 때 사용
 		LatentAction.UUID = 0; // RetriggerableDelay 동일한 UUID가 있다면 취소하고 새로 시작
 
@@ -57,6 +49,17 @@ void USoul_StateComponent::ToggleMovementInput(bool bEnabled, float Duration)
 void USoul_StateComponent::MovementInputEnableAction()
 {
 	bMovementInputEnabled = true;
+	ClearState();
+}
+
+void USoul_StateComponent::ClearState()
+{
+	CurrentState = FGameplayTag::EmptyTag;
+}
+
+bool USoul_StateComponent::IsCurrentStateEqualToAny(const FGameplayTagContainer& TagsToCheck) const
+{
+	return TagsToCheck.HasTagExact(CurrentState);
 }
 
 

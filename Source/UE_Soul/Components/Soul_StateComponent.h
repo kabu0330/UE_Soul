@@ -21,6 +21,7 @@ public:
 
 	FORCEINLINE void SetState(const FGameplayTag NewState) {CurrentState = NewState;}
 	FORCEINLINE FGameplayTag GetCurrentState() const {return CurrentState;}
+	void ClearState();
 
 	bool IsCurrentStateEqualToAny(const FGameplayTagContainer& TagsToCheck) const;
 
@@ -28,7 +29,7 @@ public:
 	UFUNCTION()
 	FORCEINLINE bool MovementInputEnabled() const { return bMovementInputEnabled;}
 
-	void ToggleMovementInput(bool bEnabled, float Duration);
+	void ToggleMovementInput(bool bEnabled, float Duration = 0.f);
 	
 protected:
 	virtual void BeginPlay() override;

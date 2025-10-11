@@ -22,11 +22,14 @@ public:
 	FORCEINLINE float GetBaseStamina() const {return BaseStamina; }
 	FORCEINLINE float GetMaxStamina() const {return MaxStamina; }
 	FORCEINLINE float GetStaminaRatio() const {return BaseStamina / MaxStamina; }
-	
-	bool CheckHasEnoughStamina(float StaminaCost) const;
-	void DecreaseStamina(float StaminaCost);
-	void ToggleStaminaRegeneration(bool bEnabled, float StartDelay = 2.f);
 
+	bool CheckHasEnoughStamina(float StaminaCost) const;
+	
+	/** 스태미나 소비*/
+	void DecreaseStamina(float StaminaCost);
+
+	/** 스태미나 회복*/
+	void ToggleStaminaRegeneration(bool bEnabled, float StartDelay = 2.f);
 	void BroadcastAttributeChanged(ESoul_AttributeType Type) const;
 	FDelegateOnAttributeChanged OnAttributeChanged;
 	

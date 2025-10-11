@@ -9,6 +9,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "UE_Soul/Components/Soul_AttributeComponent.h"
+#include "UE_Soul/Components/Soul_StateComponent.h"
+#include "UE_Soul/Data/Soul_GameplayTags.h"
 #include "UE_Soul/UI/Soul_PlayerOverlay.h"
 
 
@@ -37,6 +39,7 @@ ASoul_Character::ASoul_Character()
 	FollowCamera->bUsePawnControlRotation = false;
 
 	AttributeComponent = CreateDefaultSubobject<USoul_AttributeComponent>("AttributeComponent");
+	StateComponent = CreateDefaultSubobject<USoul_StateComponent>("StateComponent");
 }
 
 void ASoul_Character::BeginPlay()
@@ -83,14 +86,22 @@ void ASoul_Character::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	{
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ASoul_Character::Move);
 		
-		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Triggered, this, &ASoul_Character::Sprinting);
-		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ASoul_Character::StopSprint);
+		EnhancedInputComponent->BindAction(SprintRollingAction, ETriggerEvent::Triggered, this, &ASoul_Character::Sprinting);
+		EnhancedInputComponent->BindAction(SprintRollingAction, ETriggerEvent::Completed, this, &ASoul_Character::StopSprint);
+		EnhancedInputComponent->BindAction(SprintRollingAction, ETriggerEvent::Canceled, this, &ASoul_Character::Rolling);
 		//EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASoul_Character::Look);
 	} 
 }
 
 void ASoul_Character::Move(const FInputActionValue& Value)
 {
+	// 이동이 가능한 상태가 아니면 리턴
+	check(StateComponent);
+	if (StateComponent->MovementInputEnabled() == false)
+	{
+		return;
+	}
+	
 	const FVector2D MovementVector = Value.Get<FVector2D>();
 	if (GetController())
 	{
@@ -126,6 +137,7 @@ bool ASoul_Character::IsMoving() const
 
 void ASoul_Character::Sprinting()
 {
+	// 최소 스태미나보다 많고, 이동 중일 때만 질주할 수 있다.
 	if (AttributeComponent->CheckHasEnoughStamina(5.f) && IsMoving())
 	{
 		// 질주 중에는 스태미나 회복을 멈춘다.
@@ -144,6 +156,33 @@ void ASoul_Character::StopSprint()
 {
 	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
 	AttributeComponent->ToggleStaminaRegeneration(true);
+}
+
+void ASoul_Character::Rolling()
+{
+	check(AttributeComponent);
+	check(StateComponent);
+
+	if (AttributeComponent->CheckHasEnoughStamina(15.f))
+	{
+		// 스태미나 재충전 멈추고
+		AttributeComponent->ToggleStaminaRegeneration(false);
+
+		// 이동 멈추고
+		StateComponent->ToggleMovementInput(false);
+
+		// 스태미나 차감
+		AttributeComponent->DecreaseStamina(15.0f);
+
+		// 구르기 애니메이션 재생
+		PlayAnimMontage(RollingMontage);
+
+		// 상태 설정
+		StateComponent->SetState(Soul_GameplayTag::Character_State_Rolling);
+
+		// 1.5초 뒤에 스태미나 재충전 시작
+		AttributeComponent->ToggleStaminaRegeneration(true, 1.5f);
+	}
 }
 
 

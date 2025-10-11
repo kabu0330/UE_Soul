@@ -5,6 +5,8 @@
 
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "UE_Soul/Character/Soul_Character.h"
+#include "UE_Soul/Components/Soul_StateComponent.h"
 
 USoul_AnimInstance::USoul_AnimInstance()
 {
@@ -34,4 +36,12 @@ void USoul_AnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	bShouldMove = GroundSpeed > 3.f && MovementComponent->GetCurrentAcceleration() != FVector::ZeroVector;
 	
 	bIsFalling = MovementComponent->IsFalling();
+}
+
+void USoul_AnimInstance::AnimNotify_ResetMovementInput()
+{
+	if (ASoul_Character* LocalCharacter = Cast<ASoul_Character>(GetOwningActor()))
+	{
+		LocalCharacter->GetStateComponent()->ToggleMovementInput(true);
+	}
 }

@@ -21,6 +21,9 @@ public:
 	virtual void NativeInitializeAnimation() override;
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 
+	UFUNCTION()
+	void AnimNotify_ResetMovementInput();
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = OwingActor)
 	TObjectPtr<ACharacter> Character;

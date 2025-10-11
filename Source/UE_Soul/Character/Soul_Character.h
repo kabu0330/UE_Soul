@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Soul_Character.generated.h"
 
+class USoul_StateComponent;
 class USoul_PlayerOverlay;
 class USoul_AttributeComponent;
 struct FInputActionValue;
@@ -24,6 +25,8 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void NotifyControllerChanged() override;
+
+	FORCEINLINE USoul_StateComponent* GetStateComponent() const {return StateComponent;}
 	
 protected:
 	virtual void BeginPlay() override;
@@ -42,7 +45,21 @@ protected:
 
 	/** 일반 속도 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = MovementData)
-	float NormalSpeed = 500.0f;
+	float NormalSpeed = 700.0f;
+
+	/** 구르기 */
+	void Rolling();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AnimMontage)
+	UAnimMontage* RollingMontage;
+
+	// Components
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USoul_StateComponent> StateComponent;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USoul_AttributeComponent> AttributeComponent;
 
 	// UI
 	UPROPERTY(EditDefaultsOnly, Category = UI)
@@ -68,10 +85,6 @@ private:
 	TObjectPtr<UInputAction> LookAction;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input|Action", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UInputAction> SprintAction;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<USoul_AttributeComponent> AttributeComponent;
-	
+	TObjectPtr<UInputAction> SprintRollingAction;
 	
 };

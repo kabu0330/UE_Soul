@@ -45,7 +45,7 @@ void USoul_AttributeComponent::ToggleStaminaRegeneration(bool bEnabled, float St
 			GetWorld()->GetTimerManager().SetTimer(StaminaRegenTimer, this, &ThisClass::RegenStaminaHandler, 0.1f, true, StartDelay);
 		}
 	}
-	else
+	else 
 	{
 		GetWorld()->GetTimerManager().ClearTimer(StaminaRegenTimer);
 	}
@@ -76,8 +76,10 @@ void USoul_AttributeComponent::RegenStaminaHandler()
 {
 	BaseStamina = FMath::Clamp(BaseStamina + StaminaRegenRate, 0.f, MaxStamina);
 
+	// 스태미나 회복 중에는 계속 브로드캐스트해서 UI에 데이터를 업데이트
 	BroadcastAttributeChanged(ESoul_AttributeType::Stamina);
-	
+
+	// 스태미나가 가득 차면 타이머 루프 종료
 	if (BaseStamina >= MaxStamina)
 	{
 		ToggleStaminaRegeneration(false);
