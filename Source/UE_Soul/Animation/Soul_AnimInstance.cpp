@@ -45,3 +45,11 @@ void USoul_AnimInstance::AnimNotify_ResetMovementInput()
 		LocalCharacter->GetStateComponent()->ToggleMovementInput(true);
 	}
 }
+
+void USoul_AnimInstance::AnimNotify_ResetState()
+{
+	if (ASoul_Character* LocalCharacter = Cast<ASoul_Character>(GetOwningActor()))
+	{
+		LocalCharacter->GetStateComponent()->ClearState();
+	}
+}

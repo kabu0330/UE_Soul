@@ -24,6 +24,9 @@ public:
 	UFUNCTION()
 	void AnimNotify_ResetMovementInput();
 
+	UFUNCTION()
+	void AnimNotify_ResetState();
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = OwingActor)
 	TObjectPtr<ACharacter> Character;

@@ -8,9 +8,13 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "UE_Soul/Components/Soul_AttributeComponent.h"
+#include "UE_Soul/Components/Soul_CombatComponent.h"
 #include "UE_Soul/Components/Soul_StateComponent.h"
 #include "UE_Soul/Data/Soul_GameplayTags.h"
+#include "UE_Soul/Equip/Soul_Weapon.h"
+#include "UE_Soul/Interfaces/Soul_Interact.h"
 #include "UE_Soul/UI/Soul_PlayerOverlay.h"
 
 
@@ -40,6 +44,7 @@ ASoul_Character::ASoul_Character()
 
 	AttributeComponent = CreateDefaultSubobject<USoul_AttributeComponent>("AttributeComponent");
 	StateComponent = CreateDefaultSubobject<USoul_StateComponent>("StateComponent");
+	CombatComponent = CreateDefaultSubobject<USoul_CombatComponent>("CombatComponent");
 }
 
 void ASoul_Character::BeginPlay()
@@ -85,10 +90,19 @@ void ASoul_Character::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ASoul_Character::Move);
-		
+
+		// 질주
 		EnhancedInputComponent->BindAction(SprintRollingAction, ETriggerEvent::Triggered, this, &ASoul_Character::Sprinting);
 		EnhancedInputComponent->BindAction(SprintRollingAction, ETriggerEvent::Completed, this, &ASoul_Character::StopSprint);
+
+		// 구르기
 		EnhancedInputComponent->BindAction(SprintRollingAction, ETriggerEvent::Canceled, this, &ASoul_Character::Rolling);
+
+		// 장비 아이템 줍기
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &ASoul_Character::Interact);
+
+		// 전투 상태 전환
+		EnhancedInputComponent->BindAction(ToggleCombatAction, ETriggerEvent::Started, this, &ASoul_Character::ToggleCombat);
 		//EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASoul_Character::Look);
 	} 
 }
@@ -133,6 +147,18 @@ bool ASoul_Character::IsMoving() const
 		return GetCharacterMovement()->Velocity.Size2D() > 3.f && GetCharacterMovement()->GetCurrentAcceleration() != FVector::Zero();
 	}
 	return false;
+}
+
+bool ASoul_Character::CanToggleCombat() const
+{
+	check(StateComponent);
+
+	FGameplayTagContainer CheckTags;
+	CheckTags.AddTag(Soul_GameplayTag::Character_State_Attacking);
+	CheckTags.AddTag(Soul_GameplayTag::Character_State_Rolling);
+	CheckTags.AddTag(Soul_GameplayTag::Character_State_GeneralAction);
+
+	return StateComponent->IsCurrentStateEqualToAny(CheckTags) == false;
 }
 
 void ASoul_Character::Sprinting()
@@ -182,6 +208,67 @@ void ASoul_Character::Rolling()
 
 		// 1.5초 뒤에 스태미나 재충전 시작
 		AttributeComponent->ToggleStaminaRegeneration(true, 1.5f);
+	}
+}
+
+void ASoul_Character::Interact()
+{
+	FHitResult HitResult;
+	const FVector Start = GetActorLocation();
+	const FVector End = Start;
+	constexpr float Radius = 100.0f; // 감지 영역의 크기
+
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(COLLISION_OBJECT_INTERACTION));
+
+	TArray<AActor*> ActorsToIgnore;
+
+	bool bHit = UKismetSystemLibrary::SphereTraceSingleForObjects(
+		this,
+		Start,
+		End,
+		Radius,
+		ObjectTypes,
+		false,
+		ActorsToIgnore,
+		EDrawDebugTrace::ForDuration,
+		HitResult,
+		true
+		);
+
+	if (bHit)
+	{
+		if (AActor* HitActor = HitResult.GetActor())
+		{
+			if (ISoul_Interact* Interaction = Cast<ISoul_Interact>(HitActor))
+			{
+				Interaction->Interact(this);
+			}
+		}
+	}
+}
+
+void ASoul_Character::ToggleCombat()
+{
+	check(CombatComponent);
+	check(StateComponent);
+
+	// 무기를 가지고 있다면
+	if (const ASoul_Weapon* Weapon = CombatComponent->GetMainWeapon())
+	{
+		if (CanToggleCombat()) // 전투 모드로 전환이 가능한 상태인지
+		{
+			StateComponent->SetState(Soul_GameplayTag::Character_State_GeneralAction);
+			
+			if (CombatComponent->IsCombatEnabled()) // 전투 모드에서 토글 키를 눌렀으면 비전투 상태로 
+			{
+				PlayAnimMontage(Weapon->GetMontageForTag(Soul_GameplayTag::Character_Action_Unequip));
+			}
+			else // 비전투 모드에서 토글 키를 눌렀으면 전투 상태로
+			{
+				PlayAnimMontage(Weapon->GetMontageForTag(Soul_GameplayTag::Character_Action_Equip));
+			}
+		}
 	}
 }
 

@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Soul_Character.generated.h"
 
+class USoul_CombatComponent;
 class USoul_StateComponent;
 class USoul_PlayerOverlay;
 class USoul_AttributeComponent;
@@ -30,38 +31,27 @@ public:
 	
 protected:
 	virtual void BeginPlay() override;
-
-	void Move(const FInputActionValue& Value);
-	void Look(const FInputActionValue& Value);
-
-	/** 질주 */
-	void Sprinting();
-	void StopSprint();
-	bool IsMoving() const;
 	
-	/** 질주 속도 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = MovementData)
-	float SprintingSpeed = 1000.f;
-
-	/** 일반 속도 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = MovementData)
-	float NormalSpeed = 700.0f;
-
-	/** 구르기 */
-	void Rolling();
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AnimMontage)
-	UAnimMontage* RollingMontage;
-
 	// Components
+	UPROPERTY(EditDefaultsOnly, Category = "Components|Camera")
+	TObjectPtr<UCameraComponent> FollowCamera;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<USoul_StateComponent> StateComponent;
+	UPROPERTY(EditDefaultsOnly, Category = "Components|Camera")
+	TObjectPtr<USpringArmComponent> CameraBoom;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
+	/** 스탯 관리 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components)
 	TObjectPtr<USoul_AttributeComponent> AttributeComponent;
 
-	// UI
+	/** 상태 관리(이동 가능 여부 등) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components)
+	TObjectPtr<USoul_StateComponent> StateComponent;
+
+	/** 무기 및 전투 관리 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components)
+	TObjectPtr<USoul_CombatComponent> CombatComponent;
+
+	/** UI */ 
 	UPROPERTY(EditDefaultsOnly, Category = UI)
 	TSubclassOf<USoul_PlayerOverlay> PlayerOverlayClass;
 
@@ -69,12 +59,39 @@ protected:
 	TObjectPtr<USoul_PlayerOverlay> PlayerOverlay;
 	
 private:
-	UPROPERTY(EditDefaultsOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UCameraComponent> FollowCamera;
+	// Actions
+	void Move(const FInputActionValue& Value);
+	void Look(const FInputActionValue& Value);
 
-	UPROPERTY(EditDefaultsOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<USpringArmComponent> CameraBoom;
+	/** 상태 체크 */
+	bool IsMoving() const;
+	bool CanToggleCombat() const;
 
+	/** 질주 */
+	void Sprinting();
+	void StopSprint();
+	
+	/** 질주 속도 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = MovementData, meta = (AllowPrivateAccess = "true"))
+	float SprintingSpeed = 1000.f;
+
+	/** 일반 속도 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = MovementData, meta = (AllowPrivateAccess = "true"))
+	float NormalSpeed = 700.0f;
+
+	/** 구르기 */
+	void Rolling();
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AnimMontage, meta = (AllowPrivateAccess = "true"))
+	UAnimMontage* RollingMontage;
+
+	/** 무기 장착 */
+	void Interact();
+
+	/** 전투 상태 전환 */
+	void ToggleCombat();
+
+	// Enhanced Input
 	UPROPERTY(EditDefaultsOnly, Category = "Input|MappingContext", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputMappingContext> DefaultMappingContext;
 
@@ -86,5 +103,11 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input|Action", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> SprintRollingAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input|Action", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> InteractAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input|Action", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> ToggleCombatAction;
 	
 };
