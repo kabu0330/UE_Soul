@@ -21,6 +21,7 @@ public:
 	virtual void NativeInitializeAnimation() override;
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 
+	// 앞에 AnimNotify_ 를 명시하면 뒤의 노티파이 이름과 동일한 일반 노티파이 생성하면 해당 시점에 함수 콜백
 	UFUNCTION()
 	void AnimNotify_ResetMovementInput();
 

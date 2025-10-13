@@ -25,10 +25,10 @@ public:
 
 	bool CheckHasEnoughStamina(float StaminaCost) const;
 	
-	/** 스태미나 소비*/
+	/** 스태미나 소비 */
 	void DecreaseStamina(float StaminaCost);
 
-	/** 스태미나 회복*/
+	/** 스태미나 회복 */
 	void ToggleStaminaRegeneration(bool bEnabled, float StartDelay = 2.f);
 	void BroadcastAttributeChanged(ESoul_AttributeType Type) const;
 	FDelegateOnAttributeChanged OnAttributeChanged;

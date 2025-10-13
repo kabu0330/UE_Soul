@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "GameFramework/Character.h"
 #include "Soul_Character.generated.h"
 
@@ -28,6 +29,12 @@ public:
 	virtual void NotifyControllerChanged() override;
 
 	FORCEINLINE USoul_StateComponent* GetStateComponent() const {return StateComponent;}
+	FORCEINLINE bool IsSprinting() const {return bSprinting;}
+
+	// public Combo Section: AnimNotify
+	void EnableComboWindow();
+	void DisableComboWindow();
+	void AttackFinished(const float ComboResetDelay);
 	
 protected:
 	virtual void BeginPlay() override;
@@ -72,12 +79,16 @@ private:
 	void StopSprint();
 	
 	/** 질주 속도 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = MovementData, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MovementData|Sprint", meta = (AllowPrivateAccess = "true"))
 	float SprintingSpeed = 1000.f;
 
 	/** 일반 속도 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = MovementData, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MovementData|Sprint", meta = (AllowPrivateAccess = "true"))
 	float NormalSpeed = 700.0f;
+
+	/** 질주 상태 체크 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MovementData|Sprint", meta = (AllowPrivateAccess = "true"))
+	bool bSprinting = false;
 
 	/** 구르기 */
 	void Rolling();
@@ -90,6 +101,42 @@ private:
 
 	/** 전투 상태 전환 */
 	void ToggleCombat();
+	void AutoToggleCombat();
+
+	// private Combo Section
+	void Attack();
+	void SpecialAttack();
+	void HeavyAttack();
+
+	/** 현재 상태에서 수행 가능한 일반 공격 */
+	FGameplayTag GetAttackPerform() const;
+
+	/** 공격 가능 조건 체크 */
+	bool CanPerformAttack(const FGameplayTag& AttackTypeTag) const;
+
+	/** 공격 실행 */
+	void DoAttack(const FGameplayTag& AttackTypeTag);
+
+	/** 콤보 실행 */
+	void ExecuteComboAttack(const FGameplayTag& AttackTypeTag);
+
+	/** 콤보 초기화 */
+	void ResetCombo();
+	
+	/** 콤보 시퀀스 진행 중 */
+	bool bComboSequenceRunning = false;
+
+	/** 콤보 입력 가능 상태 체크 */
+	bool bCanComboInput = false;
+
+	/** 콤보 카운팅 */
+	int32 ComboCounter = 0;
+
+	/** 콤보 입력 여부 */
+	bool bSavedComboInput = false;
+
+	/** 콤보 리셋 타이머 핸들 */
+	FTimerHandle ComboResetTimerHandle;
 
 	// Enhanced Input
 	UPROPERTY(EditDefaultsOnly, Category = "Input|MappingContext", meta = (AllowPrivateAccess = "true"))
@@ -107,7 +154,16 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Input|Action", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> InteractAction;
 
+	/** 전투 활성화, 비활성화 토글 */
 	UPROPERTY(EditDefaultsOnly, Category = "Input|Action", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> ToggleCombatAction;
+
+	/** 일반 공격, 대시 공격, 특수 공격(차징) */
+	UPROPERTY(EditDefaultsOnly, Category = "Input|Action", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> AttackAction;
+
+	/** 강공격 (Shift + 좌클릭) */
+	UPROPERTY(EditDefaultsOnly, Category = "Input|Action", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> HeavyAttackAction;
 	
 };

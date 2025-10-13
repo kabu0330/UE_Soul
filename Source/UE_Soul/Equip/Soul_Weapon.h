@@ -22,6 +22,8 @@ public:
 	FORCEINLINE FName GetEquipSocketName() const {return EquipSocketName;}
 	FORCEINLINE FName GetUnequipSocketName() const {return UnequipSocketName;}
 
+	float GetStaminaCost(const FGameplayTag& InTag) const;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EquipItem() override;
@@ -37,6 +39,9 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<USoul_CombatComponent> CombatComponent;
+
+	UPROPERTY(EditAnywhere)
+	TMap<FGameplayTag, float> StaminaCostMap;
 
 private:
 

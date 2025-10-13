@@ -90,6 +90,7 @@ void ASoul_Character::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ASoul_Character::Move);
+		//EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASoul_Character::Look);
 
 		// 질주
 		EnhancedInputComponent->BindAction(SprintRollingAction, ETriggerEvent::Triggered, this, &ASoul_Character::Sprinting);
@@ -103,7 +104,16 @@ void ASoul_Character::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 
 		// 전투 상태 전환
 		EnhancedInputComponent->BindAction(ToggleCombatAction, ETriggerEvent::Started, this, &ASoul_Character::ToggleCombat);
-		//EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASoul_Character::Look);
+
+		// 공격
+		// 무기를 들고 있지 않으면 즉시 무기를 꺼내는 애니메이션 재생
+		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Started, this, &ASoul_Character::AutoToggleCombat);
+		// 마우스 버튼을 떼면 공격
+		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Canceled, this, &ASoul_Character::Attack);
+		// 트리거 조건(마우스 버튼을 길게)이면 특수 공격
+		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &ASoul_Character::SpecialAttack);
+		// 특수 공격
+		EnhancedInputComponent->BindAction(HeavyAttackAction, ETriggerEvent::Started, this, &ASoul_Character::HeavyAttack);
 	} 
 }
 
@@ -171,6 +181,8 @@ void ASoul_Character::Sprinting()
 		
 		GetCharacterMovement()->MaxWalkSpeed = SprintingSpeed;
 		AttributeComponent->DecreaseStamina(0.1f);
+
+		bSprinting = true;
 	}
 	else
 	{
@@ -182,6 +194,8 @@ void ASoul_Character::StopSprint()
 {
 	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
 	AttributeComponent->ToggleStaminaRegeneration(true);
+
+	bSprinting = false;
 }
 
 void ASoul_Character::Rolling()
@@ -270,6 +284,196 @@ void ASoul_Character::ToggleCombat()
 			}
 		}
 	}
+}
+
+void ASoul_Character::AutoToggleCombat()
+{
+	check(CombatComponent);
+	if (false == CombatComponent->IsCombatEnabled())
+	{
+		ToggleCombat();
+	}
+}
+
+bool ASoul_Character::CanPerformAttack(const FGameplayTag& AttackTypeTag) const
+{
+	check(StateComponent);
+	check(CombatComponent);
+	check(AttributeComponent);
+
+	// 무기를 들고 있는지?
+	if (IsValid(CombatComponent->GetMainWeapon()) == false)
+	{
+		return false;
+	}
+
+	// 공격을 할 수 없는 동작들을 여기서 정의
+	FGameplayTagContainer CheckTags;
+	CheckTags.AddTag(Soul_GameplayTag::Character_State_Rolling);
+	CheckTags.AddTag(Soul_GameplayTag::Character_State_Attacking);
+
+	// 공격에 필요한 스태미나 비용 가져오기
+	const float StaminaCost = CombatComponent->GetMainWeapon()->GetStaminaCost(AttackTypeTag);
+
+	/** 1. 현재 상태가 공격 액션을 취할 수 있는 상태인가?
+	 *  2. 애님 몽타주를 통해 무기를 손에 쥔 상태인지?
+	 *  3. 공격을 할 최소한의 스태미나가 있는지?
+	 */
+	return StateComponent->IsCurrentStateEqualToAny(CheckTags) == false &&
+			CombatComponent->IsCombatEnabled() == true &&
+			AttributeComponent->CheckHasEnoughStamina(StaminaCost) == true;
+}
+
+FGameplayTag ASoul_Character::GetAttackPerform() const
+{
+	if (IsSprinting())
+	{
+		return Soul_GameplayTag::Character_Attack_Running;
+	}
+	return Soul_GameplayTag::Character_Attack_Light;
+}
+
+void ASoul_Character::Attack()
+{
+	// 스프린트 상태인지 아닌지 확인하고 그에 맞는 태그 반환
+	const FGameplayTag AttackTypeTag = GetAttackPerform();
+
+	if (CanPerformAttack(AttackTypeTag))
+	{
+		ExecuteComboAttack(AttackTypeTag);
+	}
+}
+
+void ASoul_Character::SpecialAttack()
+{
+	const FGameplayTag AttackTypeTag = Soul_GameplayTag::Character_Attack_Special;
+	
+	if (CanPerformAttack(AttackTypeTag))
+	{
+		ExecuteComboAttack(AttackTypeTag);
+	}
+}
+
+void ASoul_Character::HeavyAttack()
+{
+	AutoToggleCombat();
+
+	const FGameplayTag AttackTypeTag = Soul_GameplayTag::Character_Attack_Heavy;
+
+	if (CanPerformAttack(AttackTypeTag))
+	{
+		ExecuteComboAttack(AttackTypeTag);
+	}
+}
+
+void ASoul_Character::ExecuteComboAttack(const FGameplayTag& AttackTypeTag)
+{
+	if (StateComponent->GetCurrentState() != Soul_GameplayTag::Character_State_Attacking)
+	{
+		// 애니메이션은 끝났지만 아직 콤보 시퀀스가 유효할 때 : 추가 입력 기회를 준다.
+		if (bComboSequenceRunning == true && bCanComboInput == false)
+		{
+			++ComboCounter;
+			UE_LOG(LogTemp, Warning, TEXT("Additional input : Combo counter = %d"), ComboCounter);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Log, TEXT(">>> ComboSequence Started <<<"));
+			ResetCombo();
+			bComboSequenceRunning = true;
+		}
+
+		DoAttack(AttackTypeTag);
+
+		// 콤보 종료 타이머 취소
+		GetWorld()->GetTimerManager().ClearTimer(ComboResetTimerHandle);
+	}
+	// 콤보 윈도우가 열려 있을 때 : 최적의 타이밍
+	else if (bCanComboInput)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Combo Hit!!!!"));
+		bSavedComboInput = true;
+	}
+}
+
+void ASoul_Character::DoAttack(const FGameplayTag& AttackTypeTag)
+{
+	check(StateComponent);
+	check(AttributeComponent);
+	check(CombatComponent);
+
+	// 공격 필수 조건 : 무기를 소지하고 있을 때
+	if (const ASoul_Weapon* Weapon = CombatComponent->GetMainWeapon())
+	{
+		// 공격 중 상태로 변경
+		StateComponent->SetState(Soul_GameplayTag::Character_State_Attacking);
+		StateComponent->ToggleMovementInput(false); // 이동 불가
+		
+		CombatComponent->SetLastAttackType(AttackTypeTag);
+
+		AttributeComponent->ToggleStaminaRegeneration(false); // 스태미나 회복 타이머 취소
+
+		UAnimMontage* Montage = Weapon->GetMontageForTag(AttackTypeTag, ComboCounter);
+		if (false == IsValid(Montage)) 
+		{
+			// 콤보 공격의 끝에 도달하면 0번 콤보 몽타주 세팅
+			ComboCounter = 0;
+			Montage = Weapon->GetMontageForTag(AttackTypeTag, ComboCounter);
+		}
+
+		PlayAnimMontage(Montage);
+
+		const float StaminaCost = Weapon->GetStaminaCost(AttackTypeTag);
+		
+		AttributeComponent->DecreaseStamina(StaminaCost); // 스태미나 차감, CanPerformAttack 함수에서 최소 스태미나 검사 후 해당 함수 진입
+		AttributeComponent->ToggleStaminaRegeneration(true, 1.5f); // 다시 공격하지 않으면 1.5초 뒤 스태미나 회복
+	}
+}
+
+void ASoul_Character::ResetCombo()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Combo Reset"));
+
+	bComboSequenceRunning = false;
+	bCanComboInput = false;
+	bSavedComboInput = false;
+	ComboCounter = 0;
+}
+
+void ASoul_Character::EnableComboWindow()
+{
+	bCanComboInput = true;
+	UE_LOG(LogTemp, Warning, TEXT("Combo Window Opened : Combo Counter : %d"), ComboCounter);
+}
+
+void ASoul_Character::DisableComboWindow()
+{
+	check(CombatComponent);
+
+	bCanComboInput = false;
+	if (bSavedComboInput)
+	{
+		bSavedComboInput = false;
+		++ComboCounter;
+		UE_LOG(LogTemp, Warning, TEXT("Combo Window Closed : Advancing to next combo = %d"), ComboCounter);
+		DoAttack(CombatComponent->GetLastAttackType());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Combo Window Closed : No input received"));
+	}
+}
+
+void ASoul_Character::AttackFinished(const float ComboResetDelay)
+{
+	UE_LOG(LogTemp, Warning, TEXT("AttackFinished"));
+	if (StateComponent)
+	{
+		StateComponent->ToggleMovementInput(true); // 여기서 State가 Clear 된다.
+	}
+
+	// ComboResetDelay 간 추가 콤보 입력 시간을 준 뒤 콤보 시퀀스 종료
+	GetWorld()->GetTimerManager().SetTimer(ComboResetTimerHandle, this, &ThisClass::ResetCombo, ComboResetDelay, false);
 }
 
 

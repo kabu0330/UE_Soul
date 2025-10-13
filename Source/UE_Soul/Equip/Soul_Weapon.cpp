@@ -5,11 +5,26 @@
 
 #include "UE_Soul/Components/Soul_CombatComponent.h"
 #include "UE_Soul/Data/Soul_MontageActionData.h"
+#include "UE_Soul/Data/Soul_GameplayTags.h"
 
 
 ASoul_Weapon::ASoul_Weapon()
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	StaminaCostMap.Add(Soul_GameplayTag::Character_Attack_Light, 7.f);
+	StaminaCostMap.Add(Soul_GameplayTag::Character_Attack_Running, 12.f);
+	StaminaCostMap.Add(Soul_GameplayTag::Character_Attack_Special, 15.f);
+	StaminaCostMap.Add(Soul_GameplayTag::Character_Attack_Heavy, 20.f);
+}
+
+float ASoul_Weapon::GetStaminaCost(const FGameplayTag& InTag) const
+{
+	if (StaminaCostMap.Contains(InTag))
+	{
+		return StaminaCostMap[InTag];
+	}
+	return 0.f;
 }
 
 void ASoul_Weapon::BeginPlay()
