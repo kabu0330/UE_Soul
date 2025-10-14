@@ -15,7 +15,7 @@ public class UE_Soul : ModuleRules
 			
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] {  });
+		PrivateDependencyModuleNames.AddRange(new string[] { "AnimGraphRuntime" });
 		
 		//PublicIncludePaths.AddRange(new string[] {"UE_Soul"});
 

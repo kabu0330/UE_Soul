@@ -12,6 +12,7 @@
 #include "UE_Soul/Components/Soul_AttributeComponent.h"
 #include "UE_Soul/Components/Soul_CombatComponent.h"
 #include "UE_Soul/Components/Soul_StateComponent.h"
+#include "UE_Soul/Components/Soul_TargetingComponent.h"
 #include "UE_Soul/Data/Soul_GameplayTags.h"
 #include "UE_Soul/Equip/Soul_Weapon.h"
 #include "UE_Soul/Interfaces/Soul_Interact.h"
@@ -45,6 +46,7 @@ ASoul_Character::ASoul_Character()
 	AttributeComponent = CreateDefaultSubobject<USoul_AttributeComponent>("AttributeComponent");
 	StateComponent = CreateDefaultSubobject<USoul_StateComponent>("StateComponent");
 	CombatComponent = CreateDefaultSubobject<USoul_CombatComponent>("CombatComponent");
+	TargetingComponent = CreateDefaultSubobject<USoul_TargetingComponent>("TargetingComponent");
 }
 
 void ASoul_Character::BeginPlay()
@@ -90,7 +92,7 @@ void ASoul_Character::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ASoul_Character::Move);
-		//EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASoul_Character::Look);
+		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASoul_Character::Look);
 
 		// 질주
 		EnhancedInputComponent->BindAction(SprintRollingAction, ETriggerEvent::Triggered, this, &ASoul_Character::Sprinting);
@@ -114,6 +116,12 @@ void ASoul_Character::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &ASoul_Character::SpecialAttack);
 		// 특수 공격
 		EnhancedInputComponent->BindAction(HeavyAttackAction, ETriggerEvent::Started, this, &ASoul_Character::HeavyAttack);
+
+		// 타게팅
+		EnhancedInputComponent->BindAction(LockOnTargetAction, ETriggerEvent::Started, this, &ThisClass::LockOnTarget);
+		EnhancedInputComponent->BindAction(LeftTargetAction, ETriggerEvent::Started, this, &ThisClass::LeftTarget);
+		EnhancedInputComponent->BindAction(RightTargetAction, ETriggerEvent::Started, this, &ThisClass::RightTarget);
+		
 	} 
 }
 
@@ -142,6 +150,11 @@ void ASoul_Character::Move(const FInputActionValue& Value)
 
 void ASoul_Character::Look(const FInputActionValue& Value)
 {
+	if (TargetingComponent && TargetingComponent->IsLockOn())
+	{
+		return;
+	}
+	
 	const FVector2D LookVector = Value.Get<FVector2D>();
 	if (GetController())
 	{
@@ -476,4 +489,18 @@ void ASoul_Character::AttackFinished(const float ComboResetDelay)
 	GetWorld()->GetTimerManager().SetTimer(ComboResetTimerHandle, this, &ThisClass::ResetCombo, ComboResetDelay, false);
 }
 
+void ASoul_Character::LockOnTarget()
+{
+	TargetingComponent->ToggleLockOn();
+}
+
+void ASoul_Character::LeftTarget()
+{
+	TargetingComponent->SwitchingLockedOnActor(ESwitchingDirection::Left);
+}
+
+void ASoul_Character::RightTarget()
+{
+	TargetingComponent->SwitchingLockedOnActor(ESwitchingDirection::Right);
+}
 

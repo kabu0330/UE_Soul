@@ -3,6 +3,7 @@
 
 #include "Soul_AnimInstance.h"
 
+#include "KismetAnimationLibrary.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "UE_Soul/Character/Soul_Character.h"
@@ -36,6 +37,10 @@ void USoul_AnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	bShouldMove = GroundSpeed > 3.f && MovementComponent->GetCurrentAcceleration() != FVector::ZeroVector;
 	
 	bIsFalling = MovementComponent->IsFalling();
+
+	// Modules : AnimGraphRuntime (UKismetAnimationLibrary)
+	Direction = UKismetAnimationLibrary::CalculateDirection(Velocity, Character->GetActorRotation());
+	
 }
 
 void USoul_AnimInstance::AnimNotify_ResetMovementInput()

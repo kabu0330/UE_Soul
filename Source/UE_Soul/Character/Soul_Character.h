@@ -7,6 +7,7 @@
 #include "GameFramework/Character.h"
 #include "Soul_Character.generated.h"
 
+class USoul_TargetingComponent;
 class USoul_CombatComponent;
 class USoul_StateComponent;
 class USoul_PlayerOverlay;
@@ -57,6 +58,10 @@ protected:
 	/** 무기 및 전투 관리 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components)
 	TObjectPtr<USoul_CombatComponent> CombatComponent;
+	
+	/** 무기 및 전투 관리 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components)
+	TObjectPtr<USoul_TargetingComponent> TargetingComponent;
 
 	/** UI */ 
 	UPROPERTY(EditDefaultsOnly, Category = UI)
@@ -138,6 +143,11 @@ private:
 	/** 콤보 리셋 타이머 핸들 */
 	FTimerHandle ComboResetTimerHandle;
 
+	// 타게팅
+	void LockOnTarget();
+	void LeftTarget();
+	void RightTarget();
+
 	// Enhanced Input
 	UPROPERTY(EditDefaultsOnly, Category = "Input|MappingContext", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputMappingContext> DefaultMappingContext;
@@ -165,5 +175,17 @@ private:
 	/** 강공격 (Shift + 좌클릭) */
 	UPROPERTY(EditDefaultsOnly, Category = "Input|Action", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> HeavyAttackAction;
+
+	/** 타게팅 */
+	UPROPERTY(EditDefaultsOnly, Category = "Input|Action", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> LockOnTargetAction;
+
+	/** 왼쪽으로 타겟 전환 */
+	UPROPERTY(EditDefaultsOnly, Category = "Input|Action", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> LeftTargetAction;
+
+	/** 오른쪽으로 타겟 전환 */
+	UPROPERTY(EditDefaultsOnly, Category = "Input|Action", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> RightTargetAction;
 	
 };
