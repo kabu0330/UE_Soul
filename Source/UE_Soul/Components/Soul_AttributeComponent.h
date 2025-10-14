@@ -8,6 +8,7 @@
 #include "Soul_AttributeComponent.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FDelegateOnAttributeChanged, ESoul_AttributeType, Type, float, Data);
+DECLARE_MULTICAST_DELEGATE(FOnDeath);
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class UE_SOUL_API USoul_AttributeComponent : public UActorComponent
@@ -19,6 +20,8 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
 	                           FActorComponentTickFunction* ThisTickFunction) override;
 
+	// 스태미나
+	/** 스태미나 데이터 Getter */
 	FORCEINLINE float GetBaseStamina() const {return BaseStamina; }
 	FORCEINLINE float GetMaxStamina() const {return MaxStamina; }
 	FORCEINLINE float GetStaminaRatio() const {return BaseStamina / MaxStamina; }
@@ -33,9 +36,18 @@ public:
 	void BroadcastAttributeChanged(ESoul_AttributeType Type) const;
 	FDelegateOnAttributeChanged OnAttributeChanged;
 	
+	// 체력
+	FORCEINLINE float GetBaseHealth() const {return BaseHealth;}
+	FORCEINLINE float GetMaxHealth() const {return MaxHealth;}
+
+	void TakeDamageAmount(float DamageAmount);
+	
+	FOnDeath OnDeath;
+	
 protected:
 	virtual void BeginPlay() override;
 
+	// 스태미나
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Stamina)
 	float BaseStamina = 100.0f;
 
@@ -47,6 +59,12 @@ protected:
 	
 	FTimerHandle StaminaRegenTimer;
 
+	// 체력
+	UPROPERTY(EditAnywhere, Category = "Health")
+	float BaseHealth = 100.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Health")
+	float MaxHealth = 100.0f;
 
 
 private:

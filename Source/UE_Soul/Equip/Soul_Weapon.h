@@ -7,6 +7,7 @@
 #include "Soul_Equipment.h"
 #include "Soul_Weapon.generated.h"
 
+class USoul_WeaponCollisionComponent;
 class USoul_MontageActionData;
 class USoul_CombatComponent;
 
@@ -37,12 +38,29 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment|Animation")
 	TObjectPtr<USoul_MontageActionData> MontageActionData;
 
+	/** 캐릭터의 무기 장착과 관련된 기능을 처리하는 컴포넌트 */
 	UPROPERTY()
 	TObjectPtr<USoul_CombatComponent> CombatComponent;
 
+	/** 각 무기를 장착 후 동작에 따른 스태미나 코스트 */
 	UPROPERTY(EditAnywhere)
 	TMap<FGameplayTag, float> StaminaCostMap;
 
-private:
+	/** 충돌 감지 컴포넌트 */
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<USoul_WeaponCollisionComponent> WeaponCollision;
+
+	/** 기본 데미지 */
+	UPROPERTY(EditAnywhere)
+	float BaseDamage = 15.f;
+
+	/** 데미지 승수 */
+	UPROPERTY(EditAnywhere)
+	TMap<FGameplayTag, float> DamageMultiplierMap;
+
+public: // 콜리전 관련
+	float GetAttackDamage() const;
+	FORCEINLINE USoul_WeaponCollisionComponent* GetCollision() const { return WeaponCollision;}
+	void OnHitActor(const FHitResult& Hit);
 
 };

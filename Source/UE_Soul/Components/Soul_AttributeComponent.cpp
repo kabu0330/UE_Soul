@@ -3,11 +3,34 @@
 
 #include "Soul_AttributeComponent.h"
 
+#include "Soul_StateComponent.h"
+#include "UE_Soul/Data/Soul_GameplayTags.h"
+
 
 USoul_AttributeComponent::USoul_AttributeComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 
+}
+
+void USoul_AttributeComponent::TakeDamageAmount(float DamageAmount)
+{
+	BaseHealth = FMath::Clamp(BaseHealth - DamageAmount, 0.f, MaxHealth);
+
+	BroadcastAttributeChanged(ESoul_AttributeType::Health);
+
+	if (BaseHealth <= 0.f)
+	{
+		if (OnDeath.IsBound())
+		{
+			OnDeath.Broadcast();
+		}
+
+		if (USoul_StateComponent* StateComp = GetOwner()->FindComponentByClass<USoul_StateComponent>())
+		{
+			StateComp->SetState(Soul_GameplayTag::Character_State_Death);
+		}
+	}
 }
 
 void USoul_AttributeComponent::BeginPlay()
@@ -63,6 +86,7 @@ void USoul_AttributeComponent::BroadcastAttributeChanged(ESoul_AttributeType Typ
 			break;
 
 		case ESoul_AttributeType::Health:
+			Ratio = GetBaseHealth();
 			break;
 
 		default:

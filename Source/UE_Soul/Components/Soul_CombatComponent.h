@@ -10,6 +10,9 @@
 
 class ASoul_Weapon;
 
+/** 캐릭터의 무기 장착과 관련된 기능을 처리하는 컴포넌트
+ * 
+ */
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class UE_SOUL_API USoul_CombatComponent : public UActorComponent
 {
